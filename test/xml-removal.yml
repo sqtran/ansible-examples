@@ -1,0 +1,14 @@
+---
+- name: Another XML test
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Remove unnecessary default servers from hosts
+      xml:
+        path: ./test-host.xml
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:host/a:servers/a:server[@name=\"server-two\"]"
+        state: absent
+
+...

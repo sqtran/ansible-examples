@@ -1,0 +1,28 @@
+---
+- name: Playbook to test setting up TLS 1.2
+  hosts: localhost
+  gather_facts: no
+  tasks:
+ 
+    - name: Check if TLS 1.2 is configured 
+      xml:
+        path: "host.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:host/a:management/a:security-realms/a:security-realm[@name=\"ApplicationRealm\"]/a:server-identities/a:ssl/a:engine[@enabled-protocols=\"TLSv1.2\"]"
+        count: true
+      register: tls12_status
+
+    - name: Setup TLS 1.2 if not configured
+      xml:
+        path: "host.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:host/a:management/a:security-realms/a:security-realm[@name=\"ApplicationRealm\"]/a:server-identities/a:ssl"
+        pretty_print: true
+        add_children:
+          - engine:
+              enabled-protocols: "TLSv1.2"
+      when: tls12_status.count == 0
+
+...

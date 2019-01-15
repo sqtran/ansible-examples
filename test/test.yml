@@ -1,0 +1,42 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+#    - name: turn up the volume
+#      replace:
+#        path: /home/stran/jboss-eap-7.1/bin/standalone.conf
+#        regexp: 'JAVA_OPTS="-Xms[0-9]+m -Xmx[0-9]+m -XX:MetaspaceSize=([0-9]+)M -XX:MaxMetaspaceSize=([0-9]+)m'
+#        replace: 'JAVA_OPTS="-Xms1303m -Xmx6666m -XX:MetaspaceSize=\1M -XX:MaxMetaspaceSize=\2m'
+#        backup: true
+
+    - name: Check if IBM AS400 Driver is installed
+      command: grep "com.ibm.as400.access.AS400JDBCDriver" /home/stran/jboss-eap-7.1/domain/configuration/domain.xml
+      ignore_errors: yes
+      failed_when: false
+      changed_when: no
+      register: checkForDriver
+
+    - name: Debugging
+      debug: 
+        var : checkForDriver
+
+#    - name: group testing
+#      debug:
+#        msg: "{{groups['dc'][0]}}" 
+
+#    - name: "wait for ABC to come up"
+#      uri:
+#        url: "http://localhost:8080"
+#        status_code: 200
+#      register: result
+#      until: result.status == 200
+#      retries: 60
+#      delay: 1
+
+
+    - name: Test removal of XML stuff
+      xml:
+        
+...

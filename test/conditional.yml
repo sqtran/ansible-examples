@@ -1,0 +1,35 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+    - name: Configure global logging settings based on environment
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:bindings/b:simple[@name=\"java:/app-log/loglevel\"]"
+        pretty_print: true
+        attribute: value
+        value: "{% if isProduction == 'true' or isProduction == 'yes' or isProduction == '1' %}error{% else %}debug{% endif %}"
+
+
+    - name: Configure System Properties for User Access
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:system-properties/a:property[@name=\"PlaceholderForNonProdUsers\"]"
+        pretty_print: true
+        attribute: value
+        value: "{% if isProduction == 'true' or isProduction == 'yes' or isProduction == '1' %}App_Empty{% else %}APP_AllUsers_Access{% endif %}"

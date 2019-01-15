@@ -1,0 +1,28 @@
+---
+# tasks file for server_selfsign
+
+- name: Test self-sign retrieval
+  debug:
+    msg: "I am {{ansible_fqdn}} {{ansible_hostname}} - hello {{item}}"
+  when: ansible_fqdn != item
+  with_items: "{{ groups['all'] }}"
+
+
+- name: Check if the private key matches the hostname (due to a previous misconfiguration)
+  shell: keytool -list -keystore {{jboss_home}}/{{keystore_path}} -storepass password | grep PrivateKeyEntry | awk '{print substr($1, 0, length($1)-1)}'
+  changed_when: false
+  register: host_private_cert
+
+- name: Debugging
+  debug:
+    msg: "certificate name found was {{host_private_cert.stdout }}"
+  when: host_private_cert.stdout != ansible_hostname
+  changed_when: true
+  register: did_something
+
+- name: debugging 2
+  debug:
+    msg: change registered
+  when: did_something.changed and host_private_cert.stdout != ""
+
+

@@ -1,0 +1,19 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+    - name: Update /etc/hosts with lineinfile
+      lineinfile: 
+        path: testfiles/hosts
+        state: present
+        line: 10.0.1.251  S10092BD.ODFL.COM S10092BD ODPROD.ODFL.COM ODPROD ODFLC.ODFL.COM ODFLC
+      when: isProduction

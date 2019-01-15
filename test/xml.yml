@@ -1,0 +1,138 @@
+---
+- name: Test for XML XPathing
+  hosts: localhost
+  vars:
+    jboss_home: "/home/stran/jboss-eap-7.1"
+    config_path: "testfiles/test-domain.xml"
+  gather_facts: no
+  tasks: 
+    - name: Test XPath expressions
+      xml:
+        xmlstring: "<test><profiles><profile name=\"p1\">hello world</profile><profile name=\"another\">anotherone</profile><profile name=\"xxx\">what</profile></profiles></test>"
+        xpath: "/test/profiles/profile[@name='p1']"
+#        print_match: yes
+        add_children: 
+          - steve: "tran"
+      register: myvar
+
+    - name: debug
+      debug:
+        var: myvar
+
+    - name: Increase Initial JVM Heap Size on Default Server Group
+      xml: 
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:heap"
+        attribute: size
+        value: 2048m
+        pretty_print: true
+
+    - name: Increase Maximum JVM Heap Size on Default Server Group
+      xml: 
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:heap"
+        attribute: max-size
+        value: 6144m
+        pretty_print: true
+
+    - name: Increase MaxMetaspaceSize to 2Gb
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:heap/a:jvm-options/option"
+        pretty_print: true
+        attribute: value
+        value: "-XX:MaxMetaspaceSize=2G"
+
+#  <jvm-options>
+#                    <option value="-XX:MaxMetaspaceSize=2G"/>
+#                </jvm-options>
+#     - name: Install IBM JBDC driver into Datasource stanza
+#       xml:
+#         path: "{{config_path}}"
+#         namespaces:
+#           a: urn:jboss:domain:5.0
+#           b: urn:jboss:domain:datasources:5.0
+#         xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:datasources/b:drivers"
+#         pretty_print: yes
+#         add_children:
+#           - driver:
+#               name: as400
+#               module: com.ibm.as400
+#               _ :
+#                 - driver-class: com.ibm.as400.access.AS400JDBCDriver
+#                 - xa-datasource-class: com.ibm.as400.access.AS400JDBCXADataSource
+# 
+
+ 
+#     - name: driver install
+#       block:
+#       - name: Check profile and determine if we need to install the IBM Driver
+#         xml:
+#           path: "{{jboss_home}}/domain/configuration/domain.xml"
+#           namespaces:
+#             a: urn:jboss:domain:5.0
+#             b: urn:jboss:domain:datasources:5.0
+#           xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:datasources/b:drivers/b:driver[@name=\"as400\"]"
+#           count: true
+#         register: driver_status
+# 
+#       - name: Install IBM JBDC drivers into Datasource stanza
+#         xml:
+#           path: "{{jboss_home}}/domain/configuration/domain.xml"
+#           namespaces:
+#             a: urn:jboss:domain:5.0
+#             b: urn:jboss:domain:datasources:5.0
+#           xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:datasources/b:drivers"
+#           pretty_print: yes
+#           add_children:
+#             - driver:
+#                 name: as400
+#                 module: com.ibm.as400
+#                 _ :
+#                   - driver-class: com.ibm.as400.access.AS400JDBCDriver
+#         when: driver_status.count == 0
+#       loop: 
+#         - default
+#         - full
+#         - full-ha
+#         - ha
+# 
+# 
+# 
+# 
+#     - name: Check if we need to do this
+#       xml:
+#         path: "/home/stran/jboss-eap-7.1/domain/configuration/domain.xml"
+#         namespaces:
+#           a: urn:jboss:domain:5.0
+#           b: urn:jboss:domain:datasources:5.0
+#         xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:datasources/b:drivers/b:driver[@name=\"as400\"]"
+#         count: true
+#       register: foundit
+# 
+#     - debug:
+#         var: foundit
+# 
+# 
+#     - name: Install IBM JBDC drivers into Datasource stanza
+#       xml:
+#         path: "/home/stran/jboss-eap-7.1/domain/configuration/domain.xml"
+#         namespaces:
+#           a: urn:jboss:domain:5.0
+#           b: urn:jboss:domain:datasources:5.0
+#         xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:datasources/b:drivers"
+#         pretty_print: yes
+#         add_children: 
+#           - driver: 
+#               name: as400
+#               module: com.ibm.as400
+#               _ :
+#                 - driver-class: com.ibm.as400.access.AS400JDBCDriver
+#       when: foundit.count == 0
+...

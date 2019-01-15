@@ -1,0 +1,20 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+    - name: print hostname2
+      debug:
+        msg: "{{inventory_hostname}}"
+
+    - name: Generate keypair and store it into application.keystore
+      shell:  (echo jboss4od & echo jboss4od) | keytool -genkeypair -alias {{inventory_hostname}} -keyalg RSA -keystore testkeystore.ks -storepass jboss4od --dname "CN=localhost,OU=jboss,O=odfl.com,L=Thomasville,S=NC,C=US" -ext san=dns:{{inventory_hostname}}
+...

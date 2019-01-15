@@ -1,0 +1,34 @@
+---
+- name: Add myself to cluster
+  hosts: deadpool
+  become: true
+  tasks:
+
+    - name: Make sure we have a 'bigwheel' group
+      group:
+        name: bigwheel
+        state: present
+    
+    - name: Allow 'bigwheel' group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%bigwheel'
+        line: '%bigwheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+    
+    - name: Added stran to server
+      user:
+        name: stran
+        shell: /bin/bash
+        groups: bigwheel
+        append: yes
+        state: present
+        createhome: yes
+
+    - name: Add stran's authorized key from file
+      authorized_key:
+        user: stran
+        state: present
+        key: "{{ lookup('file', '/home/stran/.ssh/id_rsa.pub') }}"
+...

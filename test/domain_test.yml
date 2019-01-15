@@ -1,0 +1,278 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+    - name: Set default JBoss logging to false
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:logging:3.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/add-logging-api-dependencies"
+        attribute: value
+        value: "false"
+        pretty_print: true
+
+    - name: Check if we need to set up the Kerberos Security Domain
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"host\"]"
+        count: true
+      register: kerberos_status
+
+    - name: Setup Kerberos Security Domain (part 1/2)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains"
+        pretty_print: yes
+        add_children:
+          - security-domain:
+              name: host
+              cache-type: default
+              _ :
+                - authentication
+      when: kerberos_status.count == 0
+
+    - name: Setup Kerberos Security Domain (part 2/2)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"host\"]/b:authentication"
+        pretty_print: yes
+        add_children:
+          - login-module:
+              code: Kerberos
+              flag: required
+              _ :
+                - module-option:
+                    name: storeKey
+                    value: "true"
+                - module-option:
+                    name: useKeyTab
+                    value: "true"
+                - module-option:
+                    name: refreshKrb5Config 
+                    value: "true"
+                - module-option:
+                    name: principal
+                    value: NEED_VARIABLE_HERE
+                - module-option:
+                    name: keyTab
+                    value: NEED_VARIABLE_HERE
+                - module-option:
+                    name: doNotPrompt
+                    value: "true"
+                - module-option:
+                    name: debug
+                    value: "false"
+                - module-option:
+                    name: isInitiator
+                    value: "false"
+      when: kerberos_status.count == 0
+
+    - name: Check if we need to set up the SPNEGO Security Domain
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"SPNEGO\"]"
+        count: true
+      register: spnego_status
+
+    - name: Setup SPNEGO Security Domain (part 1/3)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains"
+        pretty_print: yes
+        add_children:
+          - security-domain:
+              name: SPNEGO
+              cache-type: default
+              _ :
+                - authentication
+                - mapping
+      when: spnego_status.count == 0
+
+    - name: Setup SPNEGO Security Domain (part 2/3)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"SPNEGO\"]/b:mapping"
+        pretty_print: yes
+        add_children:
+          - mapping-module:
+              code: org.jboss.security.mapping.providers.DeploymentRoleToRolesMappingProvider
+              type: role 
+      when: spnego_status.count == 0
+
+    - name: Setup SPNEGO Security Domain (part 3/3)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"SPNEGO\"]/b:authentication"
+        pretty_print: yes
+        add_children:
+          - login-module:
+              code: SPNEGO
+              flag: requisite
+              _ :
+                - module-option:
+                    name: password-stacking
+                    value: useFirstPass
+                - module-option:
+                    name: serverSecurityDomain
+                    value: host
+                - module-option:
+                    name: removeRealmFromPrincipal
+                    value: "true"
+                - module-option:
+                    name: usernamePasswordDomain
+                    value: ad-domain
+          - login-module:
+              code: LdapExtended 
+              flag: required
+              _ :
+                - module-option:
+                    name: password-stacking
+                    value: useFirstPass
+                - module-option:
+                    name: bindDN
+                    value: NEED_VARIABLE_HERE_SOMETHING_SLASH_SOMETHING
+                - module-option:
+                    name: bindCredential
+                    value: NEED_VARIABLE_HERE
+                - module-option:
+                    name: java.naming.provider.url
+                    value: "ldap://corp.odfl.com"
+                - module-option:
+                    name: baseCtxDN 
+                    value: "DC=corp,DC=odfl,DC=com" 
+                - module-option:
+                    name: baseFilter
+                    value: "(sAMAccountName={0})"
+                - module-option:
+                    name: rolesCtxDN
+                    value: "DC=corp,DC=odfl,DC=com"
+                - module-option:
+                    name: rolesFilter
+                    value: "member={1}"
+                - module-option:
+                    name: roleAttributeID
+                    value: memberOf
+                - module-option:
+                    name: roleAttributeIsDN
+                    value: "true"
+                - module-option:
+                    name: roleRecursion 
+                    value: "0"
+                - module-option:
+                    name: searchScope
+                    value: "SUBTREE_SCOPE"
+                - module-option:
+                    name: roleNameAttributeID
+                    value: CN
+                - module-option:
+                    name: java.naming.referral
+                    value: follow
+          - login-module:
+              code: SPNEGO
+              flag: requisite
+              _ :
+                - module-option:
+                    name: password-stacking
+                    value: useFirstPass
+                - module-option:
+                    name: serverSecurityDomain
+                    value: host
+                - module-option:
+                    name: removeRealmFromPrincipal
+                    value: "true"
+                - module-option:
+                    name: usernamePasswordDomain
+                    value: ad-domain
+      when: spnego_status.count == 0
+
+    - name: Check if we need to set up the AD Security Domain
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"ad-domain\"]"
+        count: true
+      register: ad_status
+
+    - name: Setup AD Security Domain (part 1/2)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains"
+        pretty_print: yes
+        add_children:
+          - security-domain:
+              name: ad-domain
+              cache-type: default
+              _ :
+                - authentication
+      when: ad_status.count == 0
+
+    - name: Setup AD Security Domain (part 2/2)
+      xml:
+        path: "testfiles/test-domain.xml"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"ad-domain\"]/b:authentication"
+        pretty_print: yes
+        add_children:
+          - login-module:
+              code: LdapExtended 
+              flag: required
+              _ :
+                - module-option:
+                    name: password-stacking
+                    value: useFirstPass
+                - module-option:
+                    name: bindDN
+                    value: NEED_VARIABLE_HERE_SOMETHING_SLASH_SOMETHING
+                - module-option:
+                    name: bindCredential
+                    value: NEED_VARIABLE_HERE
+                - module-option:
+                    name: java.naming.provider.url
+                    value: "ldap://corp.odfl.com"
+                - module-option:
+                    name: baseCtxDN 
+                    value: "DC=corp,DC=odfl,DC=com" 
+                - module-option:
+                    name: baseFilter
+                    value: "(sAMAccountName={0})"
+      when: ad_status.count == 0
+...

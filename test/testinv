@@ -1,0 +1,11 @@
+[all:vars]
+ansible_connection=ssh
+isProduction=yes
+
+
+localhost
+[tagged]
+localhost
+
+[servers]
+localhost

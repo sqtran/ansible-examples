@@ -1,0 +1,19 @@
+---
+- name: A playbook for testing out how Ansible variables work
+  hosts: localhost
+  tasks:
+    - name: If one
+      set_fact: 
+        myvariable: "alpha"
+      when: "inv_var|bool"
+
+    - name: Else two
+      set_fact: 
+        myvariable: "zulu"
+      when: "not inv_var|bool"
+
+    - name: What it is
+      debug:
+        var: myvariable
+
+...

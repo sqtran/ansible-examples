@@ -1,0 +1,25 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: run shell command
+      shell:
+        cmd: "echo -n common-dev-slave:ManagementRealm:jboss4od | md5sum | awk '{print $1}'" 
+      register: myvar
+
+    - name : debugging
+      debug:
+        var: myvar
+
+    - name : set fact
+      set_fact: 
+        hashed: "{{myvar.stdout}}"
+
+    - name: more debugging
+      debug:
+        msg: "common-dev-slave={{hashed}}"

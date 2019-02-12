@@ -2,6 +2,10 @@
 - name: Playbook with random tests
   hosts: localhost
   gather_facts: yes
+  vars:
+    config_path: "testfiles/test-domain.xml"
+    userAccess: "Steve"
+    jboss_home: "Steve"
   tasks:
     - name: debug facts
       debug: 
@@ -13,7 +17,7 @@
 
     - name: Set default JBoss logging to false
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:logging:3.0
@@ -24,7 +28,7 @@
 
     - name: Check if we need to set up the Kerberos Security Domain
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -34,7 +38,7 @@
 
     - name: Setup Kerberos Security Domain (part 1/2)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -50,7 +54,7 @@
 
     - name: Setup Kerberos Security Domain (part 2/2)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -89,7 +93,7 @@
 
     - name: Check if we need to set up the SPNEGO Security Domain
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -99,7 +103,7 @@
 
     - name: Setup SPNEGO Security Domain (part 1/3)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -116,7 +120,7 @@
 
     - name: Setup SPNEGO Security Domain (part 2/3)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -130,7 +134,7 @@
 
     - name: Setup SPNEGO Security Domain (part 3/3)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -219,7 +223,7 @@
 
     - name: Check if we need to set up the AD Security Domain
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -229,7 +233,7 @@
 
     - name: Setup AD Security Domain (part 1/2)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -245,7 +249,7 @@
 
     - name: Setup AD Security Domain (part 2/2)
       xml:
-        path: "testfiles/test-domain.xml"
+        path: "{{config_path}}"
         namespaces:
           a: urn:jboss:domain:5.0
           b: urn:jboss:domain:security:2.0
@@ -275,4 +279,39 @@
                     name: baseFilter
                     value: "(sAMAccountName={0})"
       when: ad_status.count == 0
+
+
+    - name: Configure System Properties for User Access
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"PlaceholderForNonProdUsers\"]"
+        pretty_print: true
+        attribute: value
+        value: "{{userAccess}}"
+
+    - name: Configure System Properties for krb5.conf file
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"jboss.security.krb5.conf\"]"
+        pretty_print: true
+        attribute: value
+        value: "{{jboss_home}}/krb5.conf"
+
+
+    - name: Configure System Properties for EclipseLink
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"eclipselink.archive.factory\"]"
+        pretty_print: true
+        attribute: value
+        value: "org.jipijapa.eclipselink.JBossArchiveFactoryImpl"
 ...

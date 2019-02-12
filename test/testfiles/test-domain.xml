@@ -37,7 +37,6 @@
   </extensions>
   <system-properties>
     <property name="java.net.preferIPv4Stack" value="true"/>
-    <property name="PlaceholderForNonProdUsers" value="App_Empty"/>
   </system-properties>
   <management>
     <access-control provider="simple">
@@ -82,7 +81,6 @@
         <formatter name="COLOR-PATTERN">
           <pattern-formatter pattern="%K{level}%d{HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n"/>
         </formatter>
-        <add-logging-api-dependencies value="false"/>
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:batch-jberet:2.0">
         <default-job-repository name="in-memory"/>
@@ -329,9 +327,6 @@
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:naming:2.0">
         <remote-naming/>
-        <bindings>
-          <simple name="java:/app-log/loglevel" value="error"/>
-        </bindings>
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:pojo:1.0"/>
       <subsystem xmlns="urn:jboss:domain:remoting:4.0">
@@ -371,67 +366,6 @@
               <auth-module code="Dummy"/>
             </authentication-jaspi>
           </security-domain>
-          <security-domain cache-type="default" name="host">
-            <authentication>
-              <login-module code="Kerberos" flag="required">
-                <module-option name="storeKey" value="true"/>
-                <module-option name="useKeyTab" value="true"/>
-                <module-option name="refreshKrb5Config" value="true"/>
-                <module-option name="principal" value="NEED_VARIABLE_HERE"/>
-                <module-option name="keyTab" value="NEED_VARIABLE_HERE"/>
-                <module-option name="doNotPrompt" value="true"/>
-                <module-option name="debug" value="false"/>
-                <module-option name="isInitiator" value="false"/>
-              </login-module>
-            </authentication>
-          </security-domain>
-          <security-domain cache-type="default" name="SPNEGO">
-            <authentication>
-              <login-module code="SPNEGO" flag="requisite">
-                <module-option name="password-stacking" value="useFirstPass"/>
-                <module-option name="serverSecurityDomain" value="host"/>
-                <module-option name="removeRealmFromPrincipal" value="true"/>
-                <module-option name="usernamePasswordDomain" value="ad-domain"/>
-              </login-module>
-              <login-module code="LdapExtended" flag="required">
-                <module-option name="password-stacking" value="useFirstPass"/>
-                <module-option name="bindDN" value="corp\Ldapquery"/>
-                <module-option name="bindCredential" value="$program4JAVA"/>
-                <module-option name="java.naming.provider.url" value="ldap://corp.odfl.com"/>
-                <module-option name="baseCtxDN" value="DC=corp,DC=odfl,DC=com"/>
-                <module-option name="baseFilter" value="(sAMAccountName={0})"/>
-                <module-option name="rolesCtxDN" value="DC=corp,DC=odfl,DC=com"/>
-                <module-option name="rolesFilter" value="member={1}"/>
-                <module-option name="roleAttributeID" value="memberOf"/>
-                <module-option name="roleAttributeIsDN" value="true"/>
-                <module-option name="roleRecursion" value="0"/>
-                <module-option name="searchScope" value="SUBTREE_SCOPE"/>
-                <module-option name="roleNameAttributeID" value="CN"/>
-                <module-option name="java.naming.referral" value="follow"/>
-              </login-module>
-              <login-module code="SPNEGO" flag="requisite">
-                <module-option name="password-stacking" value="useFirstPass"/>
-                <module-option name="serverSecurityDomain" value="host"/>
-                <module-option name="removeRealmFromPrincipal" value="true"/>
-                <module-option name="usernamePasswordDomain" value="ad-domain"/>
-              </login-module>
-            </authentication>
-            <mapping>
-              <mapping-module code="org.jboss.security.mapping.providers.DeploymentRoleToRolesMappingProvider" type="role"/>
-            </mapping>
-          </security-domain>
-          <security-domain cache-type="default" name="ad-domain">
-            <authentication>
-              <login-module code="LdapExtended" flag="required">
-                <module-option name="password-stacking" value="useFirstPass"/>
-                <module-option name="bindDN" value="corp\Ldapquery"/>
-                <module-option name="bindCredential" value="$program4JAVA"/>
-                <module-option name="java.naming.provider.url" value="ldap://corp.odfl.com"/>
-                <module-option name="baseCtxDN" value="DC=corp,DC=odfl,DC=com"/>
-                <module-option name="baseFilter" value="(sAMAccountName={0})"/>
-              </login-module>
-            </authentication>
-          </security-domain>
         </security-domains>
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:security-manager:1.0">
@@ -456,23 +390,23 @@
           <http-listener name="default" socket-binding="http" redirect-socket="https" enable-http2="true"/>
           <https-listener name="https" socket-binding="https" security-realm="ApplicationRealm" enable-http2="true"/>
           <host name="default-host" alias="localhost">
-            <location name="/" handler="welcome-content"/>
-            <filter-ref name="server-header"/>
-            <filter-ref name="x-powered-by-header"/>
+            <location name="/" handler="odfl-content"/>
             <http-invoker security-realm="ApplicationRealm"/>
+            <filter-ref name="403-handler" predicate="true"/>
+            <filter-ref name="404-handler" predicate="true"/>
+            <filter-ref name="500-handler" predicate="true"/>
           </host>
         </server>
         <servlet-container name="default">
           <jsp-config/>
           <websockets/>
         </servlet-container>
-        <handlers>
-          <file name="welcome-content" path="${jboss.home.dir}/welcome-content"/>
-        </handlers>
-        <filters>
-          <response-header name="server-header" header-name="Server" header-value="JBoss-EAP/7"/>
-          <response-header name="x-powered-by-header" header-name="X-Powered-By" header-value="Undertow/1"/>
-        </filters>
+        <handlers/>
+        <filters/>
+        <handlers name="welcome-content" path="${jboss.home.dir}/odfl-content"/>
+        <error-page name="403-handler" code="403" path="${jboss.home.dir}/odfl-content/errors/error403.html"/>
+        <error-page name="404-handler" code="404" path="${jboss.home.dir}/odfl-content/errors/error404.html"/>
+        <error-page name="500-handler" code="500" path="${jboss.home.dir}/odfl-content/errors/error500.html"/>
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:webservices:2.0">
         <wsdl-host>${jboss.bind.address:127.0.0.1}</wsdl-host>
@@ -1907,11 +1841,7 @@
   <server-groups>
     <server-group name="main-server-group" profile="full">
       <jvm name="default">
-        <heap size="2048m" max-size="6144m">
-          <jvm-options>
-            <option value="-XX:MaxMetaspaceSize=2G"/>
-          </jvm-options>
-        </heap>
+        <heap size="1000m" max-size="1000m"/>
       </jvm>
       <socket-binding-group ref="full-sockets"/>
     </server-group>

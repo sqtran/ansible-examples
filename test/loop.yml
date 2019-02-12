@@ -1,0 +1,14 @@
+---
+- name: Test for loop variables
+  hosts: localhost
+  gather_facts: no
+  tasks: 
+    - name: Test 1 with {{item}}
+      debug:
+        msg: "var = {{item}}"
+      with_items:
+        - "abc"
+        - "def"
+        - "ghi"
+        - "123"
+...

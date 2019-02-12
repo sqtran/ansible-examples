@@ -1,0 +1,47 @@
+---
+- name: Another XML test
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    config_path: ./testfiles/test-domain.xml
+  tasks:
+
+    - name: Configure ODFL's custom error pages
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:undertow:4.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/{{item.path}}"
+        attribute: "{{item.att}}"
+        value:  "{{item.val}}"
+        pretty_print: true
+      with_items:
+        - { path: "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:location[@name=\"/\"]", att: "handler", val: "odfl-content" }
+        - { path: "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:filter-ref[@name=\"403-handler\"]", att: "predicate", val: "true" }
+        - { path: "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:filter-ref[@name=\"404-handler\"]", att: "predicate", val: "true" }
+        - { path: "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:filter-ref[@name=\"500-handler\"]", att: "predicate", val: "true" }
+        - { path: "b:handlers[@name=\"welcome-content\"]", att: "path", val: "${jboss.home.dir}/odfl-content" }
+        - { path: "b:error-page[@name=\"403-handler\"]", att: "code", val: "403" }
+        - { path: "b:error-page[@name=\"403-handler\"]", att: "path", val: "${jboss.home.dir}/odfl-content/errors/error403.html" }
+        - { path: "b:error-page[@name=\"404-handler\"]", att: "code", val: "404" }
+        - { path: "b:error-page[@name=\"404-handler\"]", att: "path", val: "${jboss.home.dir}/odfl-content/errors/error404.html" }
+        - { path: "b:error-page[@name=\"500-handler\"]", att: "code", val: "500" }
+        - { path: "b:error-page[@name=\"500-handler\"]", att: "path", val: "${jboss.home.dir}/odfl-content/errors/error500.html" }
+
+    - name: Remove default error page settings
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:undertow:4.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/{{item}}"
+        state: absent 
+        pretty_print: true
+      with_items:
+        - "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:filter-ref[@name=\"server-header\"]"
+        - "b:server[@name=\"default-server\"]/b:host[@name=\"default-host\"]/b:filter-ref[@name=\"x-powered-by-header\"]"
+        - "b:handlers/b:file[@name=\"welcome-content\"]"
+        - "b:filters/b:response-header[@name=\"server-header\"]"
+        - "b:filters/b:response-header[@name=\"x-powered-by-header\"]"
+...

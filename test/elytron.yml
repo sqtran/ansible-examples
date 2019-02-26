@@ -1,0 +1,234 @@
+---
+- name: Test Elytron
+  hosts: localhost
+  vars:
+    config_path: "testfiles/host.xml"
+    domain_config_path: "testfiles/test-domain.xml"
+  gather_facts: no
+  tasks:
+
+    - name: Make sure we have a credential stores
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:credential-stores"
+        state: present
+        pretty_print: true
+
+    - name: Configure Elytron credential-store
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:credential-stores"
+        set_children:
+          - credential-store:
+              name: "elytron_store"
+              relative-to: "jboss.home.dir"
+              location: "cred_stores/elytron_store"
+              create: "false"
+              _ :
+                - credential-reference:
+                    clear-text: "credentialstorekey"
+        pretty_print: true
+
+    - name: Configure http-interface to use Elytron
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+        xpath: "/a:host/a:management/a:management-interfaces/a:http-interface"
+        attribute: http-authentication-factory
+        value: odfl-ldap-http-auth
+        pretty_print: true
+
+    - name: Configure Elytron LDAP Authentication Factory
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:http/b:http-authentication-factory"
+        attribute: "{{item.attr}}"
+        value: "{{item.val}}"
+        pretty_print: true
+      with_items:
+       - { attr: "name", val: "odfl-ldap-http-auth"}
+       - { attr: "http-server-mechanism-factory", val: "global"}
+       - { attr: "security-domain", val: "ODFLDomain"}
+
+    - name: Configure Elytron LDAP Authentication Factory's mechanism configuration
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:http/b:http-authentication-factory[@name=\"odfl-ldap-http-auth\"]"
+        pretty_print: true
+        set_children:
+          - mechanism-configuratin:
+              _ :
+                - mechanism:
+                    mechanism-name: "BASIC"
+                    _ :
+                      - mechanism-realm:
+                          realm-name: "ODFL Application Domain"
+
+
+    - name: Configure Elytron Security Domain
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:security-domains/b:security-domain"
+        attribute: "{{item.attr}}"
+        value: "{{item.val}}"
+        pretty_print: true
+      with_items:
+       - { attr: "name", val: "ODFLDomain"}
+       - { attr: "default-realm", val: "ODFLADRealm"}
+       - { attr: "permission-mapper", val: "default-permission-mapper"}
+
+    - name: Configure Elytron Security Domain's LDAP realm config
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:security-domains/b:security-domain[@name=\"ODFLDomain\"]"
+        pretty_print: true
+        set_children:
+         - realm:
+             name: "ODFLADRealm"
+             role-decoder: "from-roles-attribute"
+
+    - name: Configure Elytron LDAP Realm
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:security-realms/b:ldap-realm"
+        attribute: "{{item.attr}}"
+        value: "{{item.val}}"
+        pretty_print: true
+      with_items:
+       - { attr: "name", val: "ODFLADRealm"}
+       - { attr: "dir-context", val: "ODFLDirContext"}
+       - { attr: "direct-verification", val: "true"}
+
+    - name: Configure Elytron LDAP Realm's Identity Mapping
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:security-realms/b:ldap-realm[@name=\"ODFLADReam\"]"
+        pretty_print: true
+        set_children:
+          - identity-mapping:
+              rdn-identifier: "sAMAccountName"
+              use-recursive-search: "true"
+              search-base-dn: "DC=corp,DC=odfl,DC=com"
+              _ :
+                - attribute-mapping:
+                    _ :
+                      - attribute:
+                          from: "cn"
+                          to: "Roles"
+                          filter: "member={1}"
+                          filter-base-dn: "DC=corp,DC=odfl,DC=com"
+
+
+    - name: Make sure we have Directory Contexts
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:dir-contexts"
+        state: present
+        pretty_print: true
+
+    - name: Configure Elytron LDAP Directory Context
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:dir-contexts"
+        pretty_print: true
+        set_children:
+          - dir-context:
+              name: "ODFLDirContext"
+              url: "ldap://corp.odfl.com"
+              principal: "CN=Service 01 JBoss LDAP Dev,OU=JBoss,OU=Service Accounts,OU=Privileged Access,OU=People,DC=corp,DC=odfl,DC=com"
+              referral-mode: "FOLLOW"
+              _ :
+                - credential-reference:
+                    store: "elytron_store"
+                    alias: "ldap_connection_password"
+
+    - name: Configure Elytron Mapper Decoder
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+         a: urn:jboss:domain:5.0
+         b: urn:wildfly:elytron:1.2
+        xpath: "/a:host/a:profile/b:subsystem/b:mappers/b:simple-role-decoder"
+        attribute: "{{item.attr}}"
+        value: "{{item.val}}"
+        pretty_print: true
+      with_items:
+       - { attr: "name", val: "from-roles-attribute"}
+       - { attr: "attribute", val: "Roles"}
+
+    - name: Add a TLS stanza if we need to
+      xml:
+        path: "{{domain_config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:tls"
+        state: present
+        pretty_print: true
+
+    - name: Configure Elytron TLS
+      xml:
+        path: "{{domain_config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:wildfly:elytron:1.2
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:tls"
+        pretty_print: true
+        set_children:
+          - key-stores:
+              _ :
+                - key-store:
+                    name: LocalhostKeyStore
+                    _ :
+                      - credential-reference:
+                          clear-text: password
+                      - implementation:
+                          type: JKS
+                      - file:
+                          path: "application.keystore"
+                          relative-to: "jboss.domain.config.dir"
+          - key-managers:
+              _ :
+                - key-manager:
+                    name: LocalhostKeyManager
+                    key-store: LocalhostKeyStore
+                    alias-filter: "server"
+          - server-ssl-contexts:
+              _ :
+                - server-ssl-context:
+                    name: LocalhostSslContext
+                    protocols: TLSv1.2
+                    key-manager: LocalhostKeyManager
+
+...

@@ -1,0 +1,18 @@
+---
+- name: Test for XML XPathing
+  hosts: localhost
+  gather_facts: no
+  vars:
+    config_path: "testfiles/test-domain2.xml"
+  tasks: 
+    - name: Configure ODFL's custom error pages
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:datasources:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem"
+        pretty_print: yes
+        input_type: xml
+        set_children: "{{ lookup('file', 'testfiles/testdatasource.xml') }}"
+...

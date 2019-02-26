@@ -1,0 +1,73 @@
+---
+- name: Loops with dictionaries
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    config_path: "./testfiles/test-domain.xml"
+  tasks:
+
+    - name: Make sure bindings element is there 
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:bindings"
+        state: present
+        pretty_print: true
+
+    - name: Include variables for JDBC Bindings
+      include_vars:
+        file: "./testfiles/alias.yml"
+
+
+    - name: Print some debug information 
+      vars: 
+        msg: |
+            Module Variables ("vars"):
+            --------------------------------
+            {{ vars | to_nice_json }} 
+    
+            Environment Variables ("environment"):
+            --------------------------------
+            {{ environment | to_nice_json }} 
+    
+            GROUP NAMES Variables ("group_names"):
+            --------------------------------
+            {{ group_names | to_nice_json }}
+    
+            GROUPS Variables ("groups"):
+            --------------------------------
+            {{ groups | to_nice_json }}
+    
+            HOST Variables ("hostvars"):
+            --------------------------------
+            {{ hostvars | to_nice_json }} 
+    
+      debug: 
+        msg: "{{ msg.split('\n') }}"       
+      tags: debug_info
+
+    - name: more debugging
+      debug:
+        var: vars 
+    - name: more debugging
+      debug:
+        var: vars.jdbc_alias 
+    - name: more debugging
+      debug:
+        var: jdbc_alias 
+
+    - name: Add naming aliases with an external dictionary file
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:bindings/b:lookup[@name=\"{{item.name}}\"]"
+        attribute: lookup
+        value: "{{item.lookup}}"
+        pretty_print: true
+      with_items:
+          - "{{jdbc_alias}}"
+...

@@ -1,0 +1,54 @@
+---
+- name: Another XML test
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    config_path: ./testfiles/test-domain.xml
+    ad_management_group: ADM_JBoss
+  tasks:
+
+
+    - name: Configure RBAC for Management Interface
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:management/a:access-control"
+        attribute: provider
+        value: rbac
+        pretty_print: yes
+
+    - name: Configure RBAC Mapping for Management Interface
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:management/a:access-control"
+        pretty_print: yes
+        set_children:
+          - role-mapping:
+              _ : 
+                - role:
+                    name: Administrator
+                    _ :
+                      - include:
+                          _ :
+                            - group:
+                                realm: ODFLRealm
+                                name: "{{ad_management_group}}"
+                            - group:
+                                realm: ODFLRealm
+                                name: "grpjav01" # make this a variable
+                      - exclude:
+                          _ :
+                            - user:
+                                name: svptmc01
+                - role:
+                    name: Deployer
+                    _ :
+                      - include:
+                          _ :
+                            - user:
+                                name: svptmc01
+
+...

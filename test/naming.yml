@@ -1,0 +1,16 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{inventory_hostname_short| regex_replace(\"host\", \"steve\")}}"
+
+    - name: print hostname
+      debug: 
+        msg: "{{inventory_hostname_short| regex_replace(\"host\", \"\")}}"

@@ -1,0 +1,15 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    ha_profile: "ha"
+    test: true
+    false_test: false
+  tasks:
+
+    - name: When clause check 1
+      debug:
+        msg: "hello"
+      when: SSS is defined
+#      when: (false_test|bool is defined) and not false_test|bool and test|bool and SSS|bool is defined

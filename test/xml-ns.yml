@@ -1,0 +1,25 @@
+---
+- name: Test for XML XPathing
+  hosts: localhost
+  vars:
+    jboss_home: "/home/stran/jboss-eap-7.1"
+    config_path: "testfiles/test-domain.xml"
+    eap_profile: "full"
+  gather_facts: no
+  tasks: 
+    - name: Test XPath expressions
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          c: urn:jboss:domain:messaging-activemq:2.0
+        pretty_print: true
+        attribute: value
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/c:subsystem/c:server[@name='default']/c:{{item.queue_type}}[@name='{{item.name}}']"
+        attribute: "{{item.attr}}"
+        value: "{{item.val}}"
+        state: present
+      with_items:
+        - {queue_type: "jms-queue", attr: "myqueuename", val: "more test queues", name: 'steve'}
+
+...

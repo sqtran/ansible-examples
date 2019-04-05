@@ -1,0 +1,15 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    jboss_home: "testfiles"
+  tasks:
+
+    - name: Configure JBoss Parameters in standard domain.conf file
+      lineinfile:
+        path: "{{jboss_home}}/domain.conf"
+        regexp: '(.+HOST_CONTROLLER_JAVA_OPTS="\$JAVA_OPTS")'
+        backrefs: true
+        line: '\1 -Djboss.bind.address.private=$(hostname -i)"'
+

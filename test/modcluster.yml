@@ -1,0 +1,83 @@
+---
+- name: Another XML test
+  hosts: localhost
+  gather_facts: false
+  vars:
+    config_path: ./testfiles/test-domain.xml
+    eap_profile: "ha"
+    remove_modcluster: false
+  tasks:
+
+    - name: Set up sentinel for profile checking
+      set_fact:
+        is_ha: false
+
+    - name: Check if we're using a High Availability profile
+      set_fact:
+        is_ha: true
+      when: eap_profile == "ha" or eap_profile == "full-ha"
+
+    - name: Remove mod_cluster configurations if we're using an HA Profile but don't need mod_cluster
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:modcluster:3.0
+        xpath: "/a:domain/{{item}}"
+        state: absent
+        pretty_print: true
+      with_items:
+#        - "/a:extensions/a:extension[@module='org.jboss.as.modcluster']"
+        - "/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem"
+        - "/a:socket-binding-groups/a:socket-binding-group[@name='{{eap_profile}}-sockets']/a:socket-binding[@name='modcluster']"
+      when: remove_modcluster|bool and is_ha|bool
+
+    - name: Make sure mod_cluster configurations are present in {{eap_profile}} if we need it
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:modcluster:3.0
+        xpath: "/a:domain/{{item}}"
+        state: present
+        pretty_print: true
+      with_items:
+        - "/a:extensions/a:extension[@module='org.jboss.as.modcluster']"
+        - "/a:socket-binding-groups/a:socket-binding-group[@name='{{eap_profile}}-sockets']/a:socket-binding[@name='modcluster' and @port='0' and @multicast-address='${jboss.modcluster.multicast.address:224.0.1.105}' and @multicast-port='23364']"
+#        - "/a:socket-binding-groups/a:socket-binding-group[@name='load-balancer-sockets']/a:socket-binding[@name='modcluster' and @interface='private' and @multicast-address='${jboss.modcluster.multicast.address:224.0.1.105}' and @multicast-port='23364']"
+      when: not remove_modcluster|bool  and is_ha|bool
+
+    - name: Check if modcluster subsystem exists in {{eap_profile}} profile and we need to include it
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:modcluster:3.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem"
+        state: present
+        count: true
+      register: modcluster_property_found
+      when: not remove_modcluster|bool  and is_ha|bool
+
+    - name: Add modcluster subsystem into {{eap_profile}} profile it doesn't exist and we need it
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']"
+        add_children:
+          - subsystem:
+              xmlns: "urn:jboss:domain:modcluster:3.0"
+              _ :
+                - mod-cluster-config:
+                    advertise-socket: "modcluster"
+                    connector: "ajp"
+                    _ :
+                      - dynamic-load-provider:
+                          _ :
+                            - load-metric:
+                                type: "cpu"
+        pretty_print: true
+      when: not remove_modcluster|bool and modcluster_property_found.count == 0  and is_ha|bool
+
+...

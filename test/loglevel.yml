@@ -1,0 +1,33 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: "testfiles/test-domain.xml"
+    domain_name: "www"
+    eap_profile: "default"
+  tasks:
+
+    - name: Suppress irrelevant XA transaction log messages
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:logging:3.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:logger[@category=\"com.arjuna\"]"
+        state: present
+        pretty_print: true
+
+    - name: Suppress irrelevant XA transaction log messages
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:logging:3.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:logger[@category=\"com.arjuna\"]/b:level"
+        attribute: name
+        value: ERROR
+        state: present
+        pretty_print: true
+
+...

@@ -1,0 +1,56 @@
+---
+- name: Test for XML XPathing
+  hosts: localhost
+  vars:
+    jboss_home: "/home/stran/jboss-eap-7.1"
+    config_path: "testfiles/test-domain.xml"
+    eap_profile: "default"
+    datasource_name: "test"
+  gather_facts: no
+  tasks: 
+
+    - name: Make sure bindings element is there
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:bindings"
+        state: present
+        pretty_print: true
+
+    - name: Include variables for JDBC Bindings
+      include_vars:
+        file: "testfiles/aliasxxxx.yml"
+#      failed_when: false
+
+    - name: Remove existing naming aliases for {{datasource_name}}
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:bindings/b:lookup[contains(@name, \"java:/jdbc\")]"
+        state: absent
+        pretty_print: true
+      when: jdbc_alias is defined
+
+    - name: Add naming aliases for {{datasource_name}}
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:bindings/b:lookup[@name=\"{{item.name}}\"]"
+        attribute: lookup
+        value: "{{item.lookup}}"
+        pretty_print: true
+      with_items:
+          - "{{jdbc_alias}}"
+      when: jdbc_alias is defined
+                                                                         
+
+
+
+
+...

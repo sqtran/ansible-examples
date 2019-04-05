@@ -1,0 +1,49 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: "testfiles/test-domain.xml"
+    domain_name: "www"
+    eap_profile: "default"
+  tasks:
+
+    - name: Set up Security Domain WWW
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:security-domains/b:security-domain[@name=\"odfl-db-domain\"]"
+        state: present
+        pretty_print: true
+      when: domain_name == "www"
+
+    - name: Configure Security Domain for WWW
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:security-domains/b:security-domain[@name=\"odfl-db-domain\"]"
+        pretty_print: yes
+        set_children:
+          - authentication:
+              _ :
+                - login-module:
+                    code: "Database"
+                    flag: "required"
+                    _ :
+                      - module-option:
+                          name: dsJndiName
+                          value: "java:/jdbc/web_oracle"
+                      - module-option:
+                          name: principalsQuery
+                          value: "SELECT U_PASSWORD FROM WEBTEAM_ADMIN.INIVSUSR01_USERS WHERE U_NAME = UPPER(?)"
+                      - module-option:
+                          name: rolesQuery
+                          value: "SELECT G_NAME, 'Roles' FROM WEBTEAM_ADMIN.INIVGMBR01_GROUP_MEMBERS WHERE G_MEMBER = UPPER(?)"
+
+      when: domain_name == "www"
+
+...

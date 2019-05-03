@@ -2,6 +2,8 @@
 - name: Playbook with random tests
   hosts: localhost
   gather_facts: yes
+  vars:
+    test: dc1-d-a-schedule01
   tasks:
     - name: debug facts
       debug: 
@@ -14,3 +16,7 @@
     - name: print hostname
       debug: 
         msg: "{{inventory_hostname_short| regex_replace(\"host\", \"\")}}"
+
+    - name: print hostname
+      debug: 
+        msg: "{{test | regex_replace(\"01\", '') }}"

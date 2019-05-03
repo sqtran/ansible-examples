@@ -1,0 +1,91 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: testfiles
+    fileName: test-domain3.xml
+    nodeName: localhost
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+#    - name: Check if we have a nodeName attribute
+#      xml:
+#        path: "{{ config_path }}/{{ fileName }}"
+#        namespaces:
+#          a: urn:jboss:domain:5.0
+#        xpath: "/a:host/a:jvms/a:jvm[@name=\"default\"]/a:jvm-options/a:option[contains(@value, \"-Dappdynamics.agent.nodeName={{ nodeName }}\")]"
+#        count: yes
+#      register: jvm_property_found
+#
+#    - name: debugging
+#      debug:
+#        var: jvm_property_found   
+#
+#    - name: Update nodeName
+#      xml:
+#        path: "{{ config_path }}/{{ fileName }}"
+#        namespaces:
+#          a: urn:jboss:domain:5.0
+#        xpath: "/a:host/a:jvms/a:jvm[@name=\"default\"]/a:jvm-options/a:option[contains(@value, \"-Dappdynamics.agent.nodeName={{ nodeName }}\")]"
+#        pretty_print: true
+#        attribute: value
+#        value: "-Dappdynamics.agent.nodeName={{ nodeName }}"
+#      when: jvm_property_found.count != 0
+# 
+#    - name: Create nodeName
+#      xml:
+#        path: "{{ config_path }}/{{ fileName }}"
+#        namespaces:
+#          a: urn:jboss:domain:5.0
+#        xpath: "/a:host/a:jvms/a:jvm[@name=\"default\"]/a:jvm-options/a:option"
+#        pretty_print: true
+#        attribute: value
+#        value: "-Dappdynamics.agent.nodeName={{ nodeName }}"
+#      when: jvm_property_found.count == 0
+
+
+
+    - name: Check if we have the javaagent.jar attribute
+      xml:
+       path: "{{ config_path }}/{{fileName}}"
+       namespaces:
+         a: urn:jboss:domain:5.0
+       xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:jvm-options/a:option[contains(@value, \"-javaagent:/opt/appdynamics/appserveragent/javaagent.jar\")]"
+       count: yes
+      register: jvm_property_found
+  
+  
+    - name: debugging
+      debug:
+        var: jvm_property_found
+  
+    - name: Update javaagent.jar
+      xml:
+        path: "{{ config_path }}/{{fileName}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:jvm-options/a:option[contains(@value, \"-javaagent:/opt/appdynamics/appserveragent/javaagent.jar\")]"
+        pretty_print: true
+        attribute: value
+        value: "-javaagent:/opt/appdynamics/appserveragent/javaagent.jar"
+      when: jvm_property_found.count != 0
+  
+   
+  
+    - name: Create javaagent.jar
+      xml:
+        path: "{{ config_path }}/{{ fileName }}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:jvm[@name=\"default\"]/a:jvm-options/a:option"
+        pretty_print: true
+        attribute: value
+        value: "-javaagent:/opt/appdynamics/appserveragent/javaagent.jar"
+      when: jvm_property_found.count == 0

@@ -1,0 +1,41 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: "testfiles/test-domain.xml"
+    domain_name: "www"
+    eap_profile: "ha"
+
+  tasks:
+    - name: Configure FD_SOCK to a known port for firewall configuration
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:jgroups:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:stacks/b:stack[@name=\"udp\"]/b:protocol[@type=\"FD_SOCK\"]"
+        set_children:
+          - property:
+             name: start_port
+          - property: 
+             name: port_range
+        pretty_print: true
+      when: eap_profile == "ha" or eap_profile == "full-ha"
+      tags: never
+
+    - name: Configure FD_SOCK to a known port for firewall configuration
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:jgroups:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='{{eap_profile}}']/b:subsystem/b:stacks/b:stack[@name=\"udp\"]/b:protocol[@type=\"FD_SOCK\"]/b:property[@name=\"{{item.name}}\"]"
+        value: "{{item.value}}"
+        pretty_print: true
+      loop:
+        - { name: "start_port", value: "50000" }
+        - { name: "port_range", value: "0" }
+
+      when: eap_profile == "ha" or eap_profile == "full-ha"
+...

@@ -1,0 +1,243 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: "testfiles/test-domain.xml"
+    userAccess: "Steve"
+    jboss_home: "Steve"
+  tasks:
+    - name: debug facts
+      debug:
+        var: ansible_facts
+
+
+    - name: Check if we need to set up the Kerberos Security Domain
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"host\"]"
+        attribute: cache-type
+        value: "default"
+        state: present
+        pretty_print: true
+
+    - name: Setup Kerberos Security Domain NEW
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"host\"]"
+        pretty_print: yes
+        set_children:
+          - authentication:
+              _ :
+                - login-module:
+                    code: "Kerberos"
+                    flag: "required"
+                    _ :
+                      - module-option:
+                          name: storeKey
+                          value: "true"
+                      - module-option:
+                          name: useKeyTab
+                          value: "true"
+                      - module-option:
+                          name: refreshKrb5Config
+                          value: "true"
+                      - module-option:
+                          name: principal
+                          value: NEED_VARIABLE_HERE
+                      - module-option:
+                          name: keyTab
+                          value: NEED_VARIABLE_HERE
+                      - module-option:
+                          name: doNotPrompt
+                          value: "true"
+                      - module-option:
+                          name: debug
+                          value: "false"
+                      - module-option:
+                          name: isInitiator
+                          value: "false"
+
+
+    - name: Check if we need to set up the SPNEGO Security Domain
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"SPNEGO\"]"
+        attribute: cache-type
+        value: "default"
+        state: present
+        pretty_print: true
+
+    - name: Setup SPNEGO Security Domain NEW
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"SPNEGO\"]"
+        pretty_print: yes
+        set_children:
+          - authentication:
+              _ :
+                - login-module:
+                    code: SPNEGO
+                    flag: requisite
+                    _ :
+                      - module-option:
+                          name: password-stacking
+                          value: useFirstPass
+                      - module-option:
+                          name: serverSecurityDomain
+                          value: host
+                      - module-option:
+                          name: removeRealmFromPrincipal
+                          value: "true"
+                      - module-option:
+                          name: usernamePasswordDomain
+                          value: ad-domain
+                - login-module:
+                    code: LdapExtended
+                    flag: required
+                    _ :
+                      - module-option:
+                          name: password-stacking
+                          value: useFirstPass
+                      - module-option:
+                          name: bindDN
+                          value: NEED_VARIABLE_HERE_SOMETHING_SLASH_SOMETHING
+                      - module-option:
+                          name: bindCredential
+                          value: NEED_VARIABLE_HERE
+                      - module-option:
+                          name: java.naming.provider.url
+                          value: "ldap://corp.odfl.com"
+                      - module-option:
+                          name: baseCtxDN
+                          value: "DC=corp,DC=odfl,DC=com"
+                      - module-option:
+                          name: baseFilter
+                          value: "(sAMAccountName={0})"
+                      - module-option:
+                          name: rolesCtxDN
+                          value: "DC=corp,DC=odfl,DC=com"
+                      - module-option:
+                          name: rolesFilter
+                          value: "member={1}"
+                      - module-option:
+                          name: roleAttributeID
+                          value: memberOf
+                      - module-option:
+                          name: roleAttributeIsDN
+                          value: "true"
+                      - module-option:
+                          name: roleRecursion
+                          value: "0"
+                      - module-option:
+                          name: searchScope
+                          value: "SUBTREE_SCOPE"
+                      - module-option:
+                          name: roleNameAttributeID
+                          value: CN
+                      - module-option:
+                          name: java.naming.referral
+                          value: follow
+          - mapping:
+              _ :
+                - mapping-module:
+                    code: org.jboss.security.mapping.providers.DeploymentRoleToRolesMappingProvider
+                    type: role
+
+    - name: Check if we need to set up the AD Security Domain
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"ad-domain\"]"
+        attribute: cache-type
+        value: "default"
+        state: present
+        pretty_print: true
+
+    - name: Setup AD Security Domain NEW
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:security:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name=\"default\"]/b:subsystem/b:security-domains/b:security-domain[@name=\"ad-domain\"]"
+        pretty_print: yes
+        set_children:
+          - authentication:
+              _ :
+                - login-module:
+                    code: LdapExtended
+                    flag: required
+                    _ :
+                      - module-option:
+                          name: password-stacking
+                          value: useFirstPass
+                      - module-option:
+                          name: bindDN
+                          value: NEED_VARIABLE_HERE_SOMETHING_SLASH_SOMETHING
+                      - module-option:
+                          name: bindCredential
+                          value: NEED_VARIABLE_HERE
+                      - module-option:
+                          name: java.naming.provider.url
+                          value: "ldap://corp.odfl.com"
+                      - module-option:
+                          name: baseCtxDN
+                          value: "DC=corp,DC=odfl,DC=com"
+                      - module-option:
+                          name: baseFilter
+                          value: "(sAMAccountName={0})"
+          - mapping:
+              _ :
+                - mapping-module:
+                    code: org.jboss.security.mapping.providers.DeploymentRoleToRolesMappingProvider
+                    type: role
+
+    - name: Configure System Properties for User Access
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"PlaceholderForNonProdUsers\"]"
+        pretty_print: true
+        attribute: value
+        value: "{{userAccess}}"
+
+    - name: Configure System Properties for krb5.conf file
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"jboss.security.krb5.conf\"]"
+        pretty_print: true
+        attribute: value
+        value: "{{jboss_home}}/krb5.conf"
+
+
+    - name: Configure System Properties for EclipseLink
+      xml:
+        path: "{{config_path}}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:naming:2.0
+        xpath: "/a:domain/a:server-groups/a:server-group[@name=\"main-server-group\"]/a:system-properties/a:property[@name=\"eclipselink.archive.factory\"]"
+        pretty_print: true
+        attribute: value
+        value: "org.jipijapa.eclipselink.JBossArchiveFactoryImpl"
+...

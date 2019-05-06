@@ -1569,6 +1569,12 @@
             <protocol type="pbcast.GMS"/>
             <protocol type="MFC"/>
             <protocol type="FRAG2"/>
+            <protocol type="org.jgroups.protocols.TCPPING">
+              <property name="initial_hosts">10.101.128.10[7600],10.101.128.11[7600]</property>
+              <property name="port_range">0</property>
+              <property name="timeout">300000</property>
+              <property name="num_initial_members">2</property>
+            </protocol>
           </stack>
         </stacks>
       </subsystem>
@@ -1588,7 +1594,7 @@
       </subsystem>
       <subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">
         <server name="default">
-          <cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>
+          <cluster password="${VAULT::messaging::cluster::1}"/>
           <security-setting name="#">
             <role name="guest" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
           </security-setting>
@@ -1854,6 +1860,9 @@
     <server-group name="main-server-group" profile="full">
       <jvm name="default">
         <heap size="1000m" max-size="1000m"/>
+        <jvm-options>
+          <option value="-javaagent:/opt/appdynamics/appserveragent/javaagent.jar"/>
+        </jvm-options>
       </jvm>
       <socket-binding-group ref="full-sockets"/>
     </server-group>

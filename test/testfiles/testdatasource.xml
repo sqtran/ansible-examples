@@ -1,0 +1,83 @@
+<datasources>
+
+<datasource jta="true" jndi-name="java:/jdbc/pndDb2--test" pool-name="pndDb2Pool" enabled="true" use-ccm="false">
+      <connection-url>jdbc:as400://oddev.odfl.com:8471</connection-url>
+      <connection-property name="libraries">PNDMODDEV dtalib pgmlibq gpli nilib gde18pr gde18mm gde17pv alkwin</connection-property>
+      <driver>as400</driver>
+      <transaction-isolation>TRANSACTION_READ_COMMITTED</transaction-isolation>
+      <pool>
+          <min-pool-size>1</min-pool-size>
+          <initial-pool-size>1</initial-pool-size>
+          <max-pool-size>50</max-pool-size>
+          <prefill>true</prefill>
+      </pool>
+      <security>
+          <user-name>SVCRHDB2</user-name>
+          <credential-reference store="datasource_store" alias="pndDb2_password"/>
+      </security>
+      <validation>
+          <check-valid-connection-sql>SELECT COUNT(*) FROM QSYS2.SYSTABLES</check-valid-connection-sql>
+          <validate-on-match>false</validate-on-match>
+          <background-validation>false</background-validation>
+      </validation>
+      <timeout>
+          <set-tx-query-timeout>false</set-tx-query-timeout>
+          <blocking-timeout-millis>0</blocking-timeout-millis>
+          <idle-timeout-minutes>0</idle-timeout-minutes>
+          <query-timeout>0</query-timeout>
+          <use-try-lock>0</use-try-lock>
+          <allocation-retry>0</allocation-retry>
+          <allocation-retry-wait-millis>0</allocation-retry-wait-millis>
+      </timeout>
+      <statement>
+          <share-prepared-statements>false</share-prepared-statements>
+      </statement>
+    </datasource>
+
+
+<datasource jndi-name="java:/jdbc/dlvoracle" pool-name="delivery-oracle" enabled="true" statistics-enabled="true">
+	<connection-url>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=dc1n01c3scan.odfl.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=dlv_qat)))</connection-url>
+	<driver-class>oracle.jdbc.driver.OracleDriver</driver-class>
+	<driver>oracle</driver>
+	<security>
+	    <user-name>dlv_user</user-name>
+	    <credential-reference store="my_store" alias="dlvuserpassword"/>
+	</security>
+</datasource>
+<datasource jndi-name="java:/jdbc/dlvoracle2" pool-name="delivery-oracle2" enabled="true" statistics-enabled="true">
+	<connection-url>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=dc1n01c3scan.odfl.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=dlv_qat)))</connection-url>
+	<driver-class>oracle.jdbc.driver.OracleDriver</driver-class>
+	<driver>oracle</driver>
+	<security>
+	    <user-name>dlv_user</user-name>
+	    <credential-reference store="my_store" alias="dlvuserpassword"/>
+	</security>
+</datasource>
+<datasource jndi-name="java:/jdbc/dlvoracle3" pool-name="delivery-oracle3" enabled="true" statistics-enabled="true">
+	<connection-url>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=dc1n01c3scan.odfl.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=dlv_qat)))</connection-url>
+	<driver-class>oracle.jdbc.driver.OracleDriver</driver-class>
+	<driver>oracle</driver>
+	<security>
+	    <user-name>dlv_user</user-name>
+	    <credential-reference store="my_store" alias="dlvuserpassword"/>
+	</security>
+</datasource>
+<drivers>
+    <driver name="as400" module="com.ibm.as400">
+        <driver-class>com.ibm.as400.access.AS400JDBCDriver</driver-class>
+        <xa-datasource-class>com.ibm.as400.access.AS400JDBCXADataSource</xa-datasource-class>
+    </driver>
+    <driver name="oracle" module="com.oracle">
+        <driver-class>oracle.jdbc.driver.OracleDriver</driver-class>
+    </driver>
+    <driver name="oracleXA" module="com.oracle">
+        <xa-datasource-class>oracle.jdbc.xa.client.OracleXADataSource</xa-datasource-class>
+    </driver>
+    <driver name="mssql" module="com.microsoft.sqlserver.jdbc">
+        <driver-class>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver-class>
+    </driver>
+    <driver name="mssqlXA" module="com.microsoft.sqlserver.jdbc">
+        <xa-datasource-class>com.microsoft.sqlserver.jdbc.SQLServerXADatasource</xa-datasource-class>
+    </driver>
+</drivers>
+</datasources>

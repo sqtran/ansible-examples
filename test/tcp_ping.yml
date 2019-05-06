@@ -1,0 +1,53 @@
+---
+- name: Playbook with random tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    config_path: testfiles
+    fileName: test-domain3.xml
+    nodeName: localhost
+  tasks:
+    - name: debug facts
+      debug: 
+        var: ansible_facts
+
+    - name: print hostname
+      debug: 
+        msg: "{{ansible_fqdn}}"
+
+  
+    - name: Make sure TCPPING protocol is there
+      xml:
+        path: "{{ config_path }}/{{ fileName }}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:jgroups:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='full-ha']/b:subsystem/b:stacks/b:stack[@name='tcp']/b:protocol[@type='org.jgroups.protocols.TCPPING']"
+        pretty_print: true
+        state: present
+
+    - name: Set TCPPING Protocol Configurations
+      xml:
+        path: "{{ config_path }}/{{ fileName }}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:jgroups:5.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='full-ha']/b:subsystem/b:stacks/b:stack[@name='tcp']/b:protocol[@type='org.jgroups.protocols.TCPPING']/b:property[@name='{{item.name}}']"
+        pretty_print: true
+        value: "{{item.value}}"
+      loop:
+        - { name: "initial_hosts", value: "10.101.128.10[7600],10.101.128.11[7600]"}
+        - { name: "port_range", value: "0"}
+        - { name: "timeout", value: "300000"}
+        - { name: "num_initial_members", value: "2"}
+
+    - name: Set ActiveMQ Cluster Password
+      xml:
+        path: "{{ config_path }}/{{ fileName }}"
+        namespaces:
+          a: urn:jboss:domain:5.0
+          b: urn:jboss:domain:messaging-activemq:2.0
+        xpath: "/a:domain/a:profiles/a:profile[@name='full-ha']/b:subsystem/b:server[@name='default']/b:cluster"
+        attribute: password
+        value: "${VAULT::messaging::cluster::1}"
+        pretty_print: true

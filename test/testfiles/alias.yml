@@ -1,0 +1,7 @@
+jdbc_alias:
+ - { name: "javasteve", lookup: "java:/jdbc/pndDb2" }
+ - { name: "java:/jdbc/dymsds", lookup: "java:/jdbc/pndDb2" }
+ - { name: "java:/jdbc/pricingrating_DB2", lookup: "java:/jdbc/pndDb2" }
+ - { name: "java:/jdbc/frtopsdb2", lookup: "java:/jdbc/pndDb2" }
+ - { name: "java:/jdbc/oracleShared", lookup: "java:/jdbc/IpaOra" }
+ - { name: "java:/jdbc/delDb2", lookup: "java:/jdbc/pndDb2" }
